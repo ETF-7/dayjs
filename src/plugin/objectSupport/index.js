@@ -1,7 +1,13 @@
 export default (o, c, dayjs) => {
   const proto = c.prototype
-  const isObject = obj => obj !== null && !(obj instanceof Date) && !(obj instanceof Array)
-        && !proto.$utils().u(obj) && (obj.constructor.name === 'Object')
+  const isObject = (obj) => {
+    if (obj === null || typeof obj !== 'object' || obj instanceof Date || obj instanceof Array) {
+      return false
+    }
+    const objectPrototype = Object.getPrototypeOf(obj)
+    return objectPrototype === null ||
+      (objectPrototype.constructor && objectPrototype.constructor.name === 'Object')
+  }
   const prettyUnit = (u) => {
     const unit = proto.$utils().p(u)
     return unit === 'date' ? 'day' : unit
