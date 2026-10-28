@@ -146,6 +146,53 @@ it('Constructor from null should return Invalid Date', () => {
   expect(moment(null).isValid()).toBe(false)
 })
 
+describe('Constructor from objects without an inherited constructor', () => {
+  const inputs = [
+    ['a null prototype', fields => Object.assign(Object.create(null), fields)],
+    ['an undefined constructor', fields => ({ ...fields, constructor: undefined })],
+    ['a null constructor', fields => ({ ...fields, constructor: null })]
+  ]
+
+  inputs.forEach(([name, create]) => {
+    it(`parses an object with ${name}`, () => {
+      const fields = {
+        year: 2024, month: 0, day: 15, hour: 12
+      }
+      const input = create(fields)
+      expect(dayjs(input).format(fmt)).toBe('2024-01-15 12:00:00.000')
+      expect(dayjs(input).valueOf()).toBe(moment(input).valueOf())
+      expect(dayjs.utc(input).format(fmt)).toBe('2024-01-15 12:00:00.000')
+      expect(dayjs.utc(input).valueOf()).toBe(moment.utc(input).valueOf())
+    })
+  })
+
+  it('parses an empty object with a null prototype as now', () => {
+    expect(dayjs(Object.create(null)).valueOf()).toBe(dayjs().valueOf())
+    expect(dayjs.utc(Object.create(null)).valueOf()).toBe(dayjs.utc().valueOf())
+  })
+
+  it('preserves parsing of primitive values', () => {
+    expect(dayjs(1705320000000).valueOf()).toBe(1705320000000)
+    expect(dayjs('2024-01-15').format('YYYY-MM-DD')).toBe('2024-01-15')
+    expect(dayjs(true).valueOf()).toBe(1)
+  })
+
+  it('does not interpret class instances as date component objects', () => {
+    class DateInput {
+      constructor() {
+        this.year = 2000
+        this.timestamp = 1705320000000
+      }
+
+      valueOf() {
+        return this.timestamp
+      }
+    }
+    expect(dayjs(new DateInput()).valueOf()).toBe(1705320000000)
+    expect(dayjs.utc(new DateInput()).valueOf()).toBe(1705320000000)
+  })
+})
+
 it('Set from Object', () => {
   for (let i = 0; i < tests.length; i += 1) {
     expect(dayjs(now).set(tests[i][0]).format(fmt)).toBe(moment(now).set(tests[i][0]).format(fmt))
